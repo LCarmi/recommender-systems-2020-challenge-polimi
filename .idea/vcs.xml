@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="VcsDirectoryMappings">
-    <mapping directory="$PROJECT_DIR$/MusicRecommender" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/inspirations/MusicRecommender" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/inspirations/RecSys_Course_AT_PoliMi" vcs="Git" />
-  </component>
-</project>
