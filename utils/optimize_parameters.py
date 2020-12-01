@@ -7,7 +7,18 @@ from skopt.space import Real, Integer, Categorical
 from skopt.utils import use_named_args
 
 import utils.evaluate
-from recommenders import *
+
+from recommenders.collaborativebasedfiltering import UserBasedCFRecommender, ItemBasedCFRecommender
+from recommenders.contentbasedfiltering import CBFRecommender
+from recommenders.hybrid import HybridRecommender
+from recommenders.mf_ials import ALSMFRecommender
+from recommenders.sslimrmse import SSLIMRMSERecommender
+from recommenders.svd import SVDRecommender
+from recommenders.test import RandomRecommender, TopPopRecommender
+from recommenders.recommender import Recommender
+from recommenders.slimbpr import SLIM_BPR_Cython
+from recommenders.lightfm import LightFMRecommender
+from recommenders.p3alpha import P3alphaRecommender
 
 names = {}
 spaces = {}
@@ -18,7 +29,9 @@ spaces[CBFRecommender] = [
     Real(1, 500, name='shrink'),
     Categorical([True, False], name='normalize'),
     Categorical(["cosine", "pearson", "adjusted", "jaccard", 'tanimoto', 'dice'], name='similarity'),
-    Categorical([None, "BM-25", "TF-IDF"], name='feature_weighting')
+    Categorical([None, "BM-25", "TF-IDF"], name='feature_weighting'),
+    Real(1, 300, name='shrink'),
+    Real(1, 300, name='shrink'),
 ]
 
 names[UserBasedCFRecommender] = "UserBasedCFRecommender"
@@ -79,7 +92,10 @@ spaces[HybridRecommender] = [
     Real(0, 1, name='ALSweight'),
     Real(0, 1, name='LFMCFweight'),
     # REFERENCE #Real(0, 5, name='SLIMBPRweight'),
-    Real(0, 1, name='SVDweight')
+    Real(0, 1, name='SVDweight'),
+    Real(0, 1, name='P3weight'),
+    Real(0, 1, name='LFMCFweight'),
+    Categorical([True, False], name="normalize")
 ]
 
 names[LightFMRecommender] = "LightFMRecommender"
@@ -92,6 +108,13 @@ spaces[LightFMRecommender] = [
     Categorical([None, "BM-25", "TF-IDF"], name='feature_weighting')
 ]
 
+names[P3alphaRecommender] = "P3alphaRecommender"
+spaces[P3alphaRecommender] = [
+    Integer(0, 400, name="topK"),
+    Real(0, 1, name='alpha'),
+    Categorical([True,False], name="normalize_similarity"),
+    Categorical([None, "BM-25", "TF-IDF"], name='feature_weighting')
+]
 
 def load_df(name):
     filename = "./optimization_data/" + name + ".res"

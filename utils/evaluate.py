@@ -1,7 +1,5 @@
 import numpy as np
 
-from recommenders.recommender import Recommender
-
 
 def precision(recommended_items, relevant_items):
     is_relevant = np.in1d(recommended_items, relevant_items, assume_unique=True)

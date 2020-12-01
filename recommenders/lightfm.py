@@ -12,8 +12,8 @@ class LightFMRecommender(Recommender):
     N_CONFIG = 0
 
     def __init__(self, URM: sp.csr_matrix, ICM, exclude_seen=True,
-                 item_alpha=1e-5, user_alpha=1e-4, learning_schedule='adadelta', loss='warp', feature_weighting="BM-25",
-                 num_components=250, epochs=30, threads=1):
+                 item_alpha=1e-4, user_alpha=1e-6, learning_schedule='adadelta', loss='warp', feature_weighting="TF-IDF",
+                 num_components=280, epochs=30, threads=1, K1=1.2, B=0.75):
 
         super().__init__(URM, ICM, exclude_seen)
 
@@ -25,11 +25,13 @@ class LightFMRecommender(Recommender):
         self.threads = threads
         self.loss = loss
         self.feature_weighting = feature_weighting
+        self.K1 = K1
+        self.B = B
 
     def fit(self):
         if self.feature_weighting == "BM25":
             self.URM = self.URM.astype(np.float32)
-            self.URM = okapi_BM_25(self.URM.T).T
+            self.URM = okapi_BM_25(self.URM.T, self.K1, self.B).T
             self.URM = check_matrix(self.URM, 'csr')
 
         elif self.feature_weighting == "TF-IDF":

@@ -1,14 +1,16 @@
 import numpy as np
 import scipy.sparse as sp
 
-from recommenders.collaborativebasedfiltering import ItemBasedCFRecommender, UserBasedCFRecommender
+from recommenders.collaborativebasedfiltering import UserBasedCFRecommender, ItemBasedCFRecommender
 from recommenders.contentbasedfiltering import CBFRecommender
 from recommenders.mf_ials import ALSMFRecommender
-from recommenders.recommender import Recommender
-from recommenders.slimbpr import SLIM_BPR_Cython
 from recommenders.sslimrmse import SSLIMRMSERecommender
 from recommenders.svd import SVDRecommender
-
+from recommenders.recommender import Recommender
+from recommenders.slimbpr import SLIM_BPR_Cython
+from recommenders.lightfm import LightFMRecommender
+from recommenders.p3alpha import P3alphaRecommender
+from recommenders.test import TopPopRecommender
 
 def get_tops(ratings, k):
     """ Returns an array of k best tracks according to the ratings provided """
@@ -28,6 +30,7 @@ class HybridRecommender(Recommender):
 
         super().__init__(URM, ICM, exclude_seen)
         self._set_k(k)
+        self.normalize = None
 
         self.IBCFweight = None
         self.UBCFweight = None
@@ -37,9 +40,11 @@ class HybridRecommender(Recommender):
         self.ALSweight = None
         self.SLIMBPRweight = None
         self.SVDweight = None
+        self.P3weight = None
+        self.TopPopweight = 0.01
 
     def set_weights(self, IBCFweight=0.018, UBCFweight=1, LFMCFweight=0.0, CBFweight=1, SSLIMweight=0.0,
-                    ALSweight=0.73, SLIMBPRweight=1, SVDweight=0.0):
+                    ALSweight=0.73, SLIMBPRweight=1, SVDweight=0.0, P3weight=1.0, normalize=False):
 
         """ Sets the weights for every algorithm involved in the hybrid recommender """
 
@@ -51,15 +56,16 @@ class HybridRecommender(Recommender):
         self.ALSweight = ALSweight
         self.SLIMBPRweight = SLIMBPRweight
         self.SVDweight = SVDweight
+        self.P3weight = P3weight
+
+        self.normalize = normalize
+
 
     def fit(self):
 
-        # if self.LFMCFweight is not None:
-        #     ### LIGHTFM CF ###
-        #     self.LFMCF = LightFMRecommender(self.URM_train, self.URM_test,
-        #                                     self.URM_validation, self.target_playlists, subfolder=self.subfolder)
-        #     self.LFMCF.fit()
-        #     self.LFMCF._train()
+        ### TopPop ###
+        self.TopPop = TopPopRecommender()
+        self.TopPop.fit(self.URM)
 
         ### Item-based collaborative filtering ###
         self.ItemBased = ItemBasedCFRecommender(self.URM, self.ICM)
@@ -89,6 +95,14 @@ class HybridRecommender(Recommender):
         self.SVD = SVDRecommender(self.URM, self.ICM)
         self.SVD.fit()
 
+        ### LIGHTFM CF ###
+        self.LFMCF = LightFMRecommender(self.URM, self.ICM)
+        self.LFMCF.fit()
+
+        ### P3ALPHA CF ###
+        self.P3 = P3alphaRecommender(self.URM, self.ICM)
+        self.P3.fit()
+
         self.set_weights()
 
     def _set_k(self, k):
@@ -112,6 +126,9 @@ class HybridRecommender(Recommender):
             self.ALSweight,
             self.SLIMBPRweight,
             self.SVDweight,
+            self.LFMCFweight,
+            self.P3weight,
+            self.TopPopweight,
         ]
 
         recommenders = [
@@ -122,53 +139,18 @@ class HybridRecommender(Recommender):
             self.ALS,
             self.SLIMBPR,
             self.SVD,
+            self.LFMCF,
+            self.P3,
+            self.TopPop
         ]
         predicted_ratings = np.zeros(shape=self.URM.shape[1], dtype=np.float32)
 
         for recommender, weight in zip(recommenders, weights):
             if weight > 0.0:
                 ratings = recommender.compute_predicted_ratings(user_id)
+                if self.normalize:
+                    ratings *= 1.0 / ratings.max()
                 tops = get_tops(ratings, self.k)
                 predicted_ratings[tops] += np.multiply(ratings[tops], weight)
-
-        # if self.IBCFweight is not 0.0:
-        #     itemcf_exp_ratings = self.ItemBased.compute_predicted_ratings(user_id)
-        #     tops = get_tops(itemcf_exp_ratings, self.k)
-        #     predicted_ratings[tops] += np.multiply(itemcf_exp_ratings[tops], self.IBCFweight)
-        #
-        # if self.UBCFweight is not 0.0:
-        #     usercf_exp_ratings = self.UserBased.compute_predicted_ratings(user_id)
-        #     tops = get_tops(usercf_exp_ratings, self.k)
-        #     predicted_ratings[tops] += np.multiply(usercf_exp_ratings[tops], self.UBCFweight)
-        #
-        # # if self.LFMCFweight is not None:
-        # #     lightfm_exp_ratings = self.LFMCF.compute_predicted_ratings(playlist_id=playlist_id)
-        # #     tops = get_tops(lightfm_exp_ratings, self.k)
-        # #     predicted_ratings[tops] += np.multiply(lightfm_exp_ratings[tops], self.LFMCFweight)
-        #
-        # if self.CBFweight is not 0.0:
-        #     cbf_exp_ratings = self.ContentBased.compute_predicted_ratings(user_id)
-        #     tops = get_tops(cbf_exp_ratings, self.k)
-        #     predicted_ratings[tops] += np.multiply(cbf_exp_ratings[tops], self.CBFweight)
-        #
-        # if self.ALSweight is not 0.0:
-        #     mfals_exp_ratings = self.ALS.compute_predicted_ratings(user_id)
-        #     tops = get_tops(mfals_exp_ratings, self.k)
-        #     predicted_ratings[tops] += np.multiply(mfals_exp_ratings[tops], self.ALSweight)
-        #
-        # if self.SSLIMweight is not 0.0:
-        #     slimrmse_exp_ratings = self.SSLIM.compute_predicted_ratings(user_id)
-        #     tops = get_tops(slimrmse_exp_ratings, self.k)
-        #     predicted_ratings[tops] += np.multiply(slimrmse_exp_ratings[tops], self.SSLIMweight)
-        #
-        # if self.SLIMBPRweight is not 0.0:
-        #     slimbpr_exp_ratings = self.SLIMBPR.compute_predicted_ratings(user_id)
-        #     tops = get_tops(slimbpr_exp_ratings, self.k)
-        #     predicted_ratings[tops] += np.multiply(slimbpr_exp_ratings[tops], self.SLIMBPRweight)
-        #
-        # if self.SVDweight is not 0.0:
-        #     svd_exp_ratings = self.SVD.compute_predicted_ratings(user_id)
-        #     tops = get_tops(svd_exp_ratings, self.k)
-        #     predicted_ratings[tops] += np.multiply(svd_exp_ratings[tops], self.SVDweight)
 
         return predicted_ratings

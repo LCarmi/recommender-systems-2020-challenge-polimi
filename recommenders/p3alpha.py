@@ -9,7 +9,7 @@ import scipy.sparse as sp
 
 from sklearn.preprocessing import normalize
 
-from recommenders import Recommender
+from recommenders.recommender import Recommender
 from utils.official.Recommender_utils import check_matrix, similarityMatrixTopK
 from utils.official.IR_feature_weighting import okapi_BM_25, TF_IDF
 
@@ -22,8 +22,9 @@ class P3alphaRecommender(Recommender):
 
     RECOMMENDER_NAME = "P3alphaRecommender"
 
-    def __init__(self, URM_train, URM: sp.csr_matrix, ICM, exclude_seen=True,
-                 topK=100, alpha=1., min_rating=0, implicit=True, normalize_similarity=False, feature_weighting=None):
+    def __init__(self, URM: sp.csr_matrix, ICM, exclude_seen=True,
+                 topK=300, alpha=0.46, min_rating=0, implicit=True, normalize_similarity=False,
+                 feature_weighting="TF-IDF"):
 
         super().__init__(URM, ICM,exclude_seen)
         self.W_sparse = None
@@ -35,11 +36,6 @@ class P3alphaRecommender(Recommender):
         self.normalize_similarity = normalize_similarity
         self.feature_weighting = feature_weighting
 
-
-    def __str__(self):
-        return "P3alpha(alpha={}, min_rating={}, topk={}, implicit={}, normalize_similarity={})".format(self.alpha,
-                                                                            self.min_rating, self.topK, self.implicit,
-                                                                            self.normalize_similarity)
 
     def fit(self):
 
