@@ -10,8 +10,8 @@ import utils.evaluate
 
 from recommenders.collaborativebasedfiltering import UserBasedCFRecommender, ItemBasedCFRecommender
 from recommenders.contentbasedfiltering import CBFRecommender
-from recommenders.hybrid import HybridRecommender
-from recommenders.mf_ials import ALSMFRecommender
+from recommenders.hybrid import HybridRecommender, HybridRecommenderWithTopK
+from recommenders.mf_ials import ALSMFRecommender, ImplicitALSRecommender
 from recommenders.sslimrmse import SSLIMRMSERecommender
 from recommenders.svd import SVDRecommender
 from recommenders.test import RandomRecommender, TopPopRecommender
@@ -23,43 +23,47 @@ from recommenders.p3alpha import P3alphaRecommender
 names = {}
 spaces = {}
 
-names[CBFRecommender] = "CBFRecommender"
+names[CBFRecommender] = "CBFRecommender_BM_25_refine"
 spaces[CBFRecommender] = [
     Integer(1, 2000, name='topK'),
     Real(1, 500, name='shrink'),
     Categorical([True, False], name='normalize'),
-    Categorical(["cosine", "pearson", "adjusted", "jaccard", 'tanimoto', 'dice'], name='similarity'),
-    Categorical([None, "BM-25", "TF-IDF"], name='feature_weighting'),
-    Real(1, 300, name='shrink'),
-    Real(1, 300, name='shrink'),
+    Categorical(["cosine", "jaccard", 'tanimoto', 'dice'], name='similarity'),
+    Categorical(["BM25"], name='feature_weighting'),
+    Real(0.1, 200, name='K'),
+    Real(0.01, 1, name='B'),
 ]
 
-names[UserBasedCFRecommender] = "UserBasedCFRecommender"
+names[UserBasedCFRecommender] = "UserBasedCFRecommender_BM_25_refine"
 spaces[UserBasedCFRecommender] = [
-    Integer(1, 2000, name='topK'),
-    Real(1, 300, name='shrink'),
+    Integer(1, 500, name='topK'),
+    Real(1, 20, name='shrink'),
     Categorical([True], name='normalize'),
-    Categorical(["cosine", "pearson", "adjusted", "jaccard", 'tanimoto', 'dice'], name='similarity'),
-    Categorical([None, "BM-25", "TF-IDF"], name='feature_weighting')
+    Categorical(['tanimoto'], name='similarity'),
+    Categorical(["BM25"], name='feature_weighting'),
+    Real(0.1, 200, name='K'),
+    Real(0.01, 1, name='B'),
 ]
 
-names[ItemBasedCFRecommender] = "ItemBasedCFRecommender"
+names[ItemBasedCFRecommender] = "ItemBasedCFRecommender_TF_IDF_refine"
 spaces[ItemBasedCFRecommender] = [
     Integer(1, 5000, name='topK'),
     Real(1, 500, name='shrink'),
-    Categorical([True, False], name='normalize'),
-    Categorical(["cosine", "pearson", "adjusted", "asymmetric", "jaccard", 'tanimoto', 'dice'], name='similarity'),
-    Categorical([None, "BM-25", "TF-IDF"], name='feature_weighting')
+    Categorical([True], name='normalize'),
+    Categorical(["cosine"], name='similarity'),
+    Categorical(["TF-IDF"], name='feature_weighting'),
+    #Real(0.1, 200, name='K'),
+    #Real(0.1, 1, name='B'),
 ]
 
-names[SLIM_BPR_Cython] = "SLIM_BPR_Cython"
+names[SLIM_BPR_Cython] = "SLIM_BPR_Cython_smaller"
 spaces[SLIM_BPR_Cython] = [
     Integer(1, 2000, name='topK'),
     Categorical([1e-4, 1e-3, 1e-2], name="learning_rate"),
     Real(0, 1, name='lambda_i'),
     Real(0, 1, name='lambda_j'),
     Categorical([True, False], name='symmetric'),
-    Integer(1, 500, name="epochs")
+    Integer(1, 200, name="epochs")
 ]
 
 names[SSLIMRMSERecommender] = "SSLIMRMSERecommender"
@@ -79,23 +83,42 @@ spaces[SVDRecommender] = [
 names[ALSMFRecommender] = "ALSMFRecommender"
 spaces[ALSMFRecommender] = [
     Real(0, 100, name='alpha'),
-    Real(0, 5, name='lambda_val'),
+    Real(0, 15, name='lambda_val'),
+]
+names[ImplicitALSRecommender] = "ImplicitALSRecommender"
+spaces[ImplicitALSRecommender] = [
+    Integer(0, 500, name='latent_factors'),
+    Real(0, 10, name='lambda_val'),
 ]
 
 names[HybridRecommender] = "HybridRecommender"
 spaces[HybridRecommender] = [
-    # IBCFweight=1, UBCFweight=1, LFMCFweight=0.0, CBFweight=1, SSLIMweight=0.0, ALSweight=0.0, SLIMBPRweight=0.0
-    Real(0, 1, name='IBCFweight'),
-    Real(0, 1, name='UBCFweight'),
-    Real(0, 1, name='CBFweight'),
-    Real(0, 1, name='SSLIMweight'),
-    Real(0, 1, name='ALSweight'),
-    Real(0, 1, name='LFMCFweight'),
-    # REFERENCE #Real(0, 5, name='SLIMBPRweight'),
-    Real(0, 1, name='SVDweight'),
+    Categorical([0.0], name="TopPopweight"),
+    Real(0, 5, name='IBCFweight'),
+    Real(0, 5, name='UBCFweight'),
+    Real(0, 5, name='CBFweight'),
+    Categorical([0.0], name="SSLIMweight"),
+    Real(0, 5, name='ALSweight'),
+    Categorical([0.0], name="LFMCFweight"),
+    Real(0, 5, name='SLIMBPRweight'),
+    Categorical([0.0], name="SVDweight"),
     Real(0, 1, name='P3weight'),
-    Real(0, 1, name='LFMCFweight'),
-    Categorical([True, False], name="normalize")
+    Categorical([True], name="normalize")
+]
+
+names[HybridRecommenderWithTopK] = "HybridRecommenderWithTopK"
+spaces[HybridRecommenderWithTopK] = [
+    Real(0, 1, name='TopPopweight'),
+    Real(0, 5, name='IBCFweight'),
+    Real(0, 5, name='UBCFweight'),
+    Real(0, 5, name='CBFweight'),
+    Categorical([0.0], name="SSLIMweight"),
+    Real(0, 5, name='ALSweight'),
+    Categorical([0.0], name="LFMCFweight"),
+    Real(0, 5, name='SLIMBPRweight'),
+    Categorical([0.0], name="SVDweight"),
+    Real(0, 5, name='P3weight'),
+    Categorical([True], name="normalize")
 ]
 
 names[LightFMRecommender] = "LightFMRecommender"
@@ -105,15 +128,18 @@ spaces[LightFMRecommender] = [
     Categorical([1e-3, 1e-4, 1e-5, 1e-6], name='user_alpha'),
     Integer(200, 400, name="num_components"),
     #Integer(20, 50, name="epochs"), #FIXED TO 30 due to time constraints
-    Categorical([None, "BM-25", "TF-IDF"], name='feature_weighting')
+    Categorical([None, "BM25", "TF-IDF"], name='feature_weighting')
 ]
 
-names[P3alphaRecommender] = "P3alphaRecommender"
+names[P3alphaRecommender] = "P3alphaRecommender_no_BM_25"
 spaces[P3alphaRecommender] = [
     Integer(0, 400, name="topK"),
     Real(0, 1, name='alpha'),
     Categorical([True,False], name="normalize_similarity"),
-    Categorical([None, "BM-25", "TF-IDF"], name='feature_weighting')
+    Categorical([None, "TF-IDF"], name='feature_weighting')
+    #Real(0.1, 200, name='K'),
+    #Real(0.01, 1, name='B'),
+
 ]
 
 def load_df(name):
@@ -155,22 +181,37 @@ def create_df(param_tuples, param_names, value_list, metric="MAP"):
     return df
 
 
-def optimize_parameters(URM, ICM, URM_test, URMrecommender_class: type, n_calls=100, n_random_starts=None, seed=None):
+def optimize_parameters(URM, ICM, URM_test, URMrecommender_class: type, n_calls=100, n_random_starts=None, seed=None, k=5, validation_percentage=0.05):
     if n_random_starts is None:
         n_random_starts = int(0.5 * n_calls)
 
     name = names[URMrecommender_class]
     space = spaces[URMrecommender_class]
 
-    if URMrecommender_class is HybridRecommender:
-        recommender = HybridRecommender(URM, ICM)
-        recommender.fit()
+    if URMrecommender_class == HybridRecommender:
+        recommender = URMrecommender_class(URM, ICM)
 
         @use_named_args(space)
         def objective(**params):
-            recommender.set_weights(**params)
+            recommender.fit(**params)
             _, _, MAP = utils.evaluate.evaluate_algorithm(URM_test, recommender)
             return -MAP
+    elif URMrecommender_class == HybridRecommenderWithTopK:
+        recommenders = []
+        tests = []
+        for _ in range(k):
+            URM_train_csr, URM_test_csr, ICM_csr, targets = utils.dataset.give_me_splitted_dataset(validation_percentage)
+            recommenders.append(URMrecommender_class(URM_train_csr, ICM_csr))
+            tests.append(URM_test_csr)
+
+        @use_named_args(space)
+        def objective(**params):
+            scores = []
+            for recommender, test in zip(recommenders, tests):
+                recommender.fit(**params)
+                _, _, MAP = utils.evaluate.evaluate_algorithm(test, recommender)
+                scores.append(-MAP)
+            return sum(scores)/len(scores)
     else:
         @use_named_args(space)
         def objective(**params):

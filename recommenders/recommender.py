@@ -1,8 +1,6 @@
 import numpy as np
 import scipy.sparse as sp
 
-from recommenders.test import TopPopRecommender
-
 
 class Recommender:
 
@@ -66,6 +64,17 @@ class Recommender:
         predicted_ratings[user_profile] = -np.inf
 
         return predicted_ratings
+
+    def compute_predicted_ratings_top_k(self, user_id, k):
+        predicted_ratings = self.compute_predicted_ratings(user_id)
+
+        if self.exclude_seen:
+            predicted_ratings = self.__filter_seen(user_id, predicted_ratings)
+
+        # top k indices in sparse order
+        mask = np.argpartition(predicted_ratings, -k)[-k:]
+
+        return predicted_ratings[mask], mask
 
 
 class MatrixFactorizationRecommender(Recommender):

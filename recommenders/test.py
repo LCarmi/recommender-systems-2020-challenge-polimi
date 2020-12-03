@@ -1,5 +1,8 @@
 import numpy as np
 
+from recommenders.recommender import Recommender
+import scipy.sparse as sp
+
 
 class RandomRecommender():
     def __init__(self):
@@ -14,19 +17,19 @@ class RandomRecommender():
         return recommended_items
 
 
-class TopPopRecommender():
-    def __init__(self):
+class TopPopRecommender(Recommender):
+    def __init__(self, URM: sp.csr_matrix, ICM):
+        super().__init__(URM, ICM)
         self.popular_items = None
+        self.item_popularity = None
 
-    def fit(self, URM_train):
-        item_popularity = np.ediff1d(URM_train.tocsc().indptr)
+    def fit(self):
+        self.item_popularity = np.ediff1d(self.URM.copy().tocsc().indptr)
 
         # We are not interested in sorting the popularity value,
         # but to order the items according to it
-        self.popular_items = np.argsort(item_popularity)
+        self.popular_items = np.argsort(self.item_popularity)
         self.popular_items = np.flip(self.popular_items, axis=0)
 
-    def recommend(self, user_id, at=5):
-        recommended_items = self.popular_items[0:at]
-
-        return recommended_items
+    def compute_predicted_ratings(self, user_id):
+        return self.item_popularity.astype(np.float)

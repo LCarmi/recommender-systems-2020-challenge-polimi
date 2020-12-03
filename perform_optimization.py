@@ -3,8 +3,8 @@ import utils.optimize_parameters
 
 from recommenders.collaborativebasedfiltering import UserBasedCFRecommender, ItemBasedCFRecommender
 from recommenders.contentbasedfiltering import CBFRecommender
-from recommenders.hybrid import HybridRecommender
-from recommenders.mf_ials import ALSMFRecommender
+from recommenders.hybrid import HybridRecommender, HybridRecommenderWithTopK
+from recommenders.mf_ials import ALSMFRecommender, ImplicitALSRecommender
 from recommenders.sslimrmse import SSLIMRMSERecommender
 from recommenders.svd import SVDRecommender
 from recommenders.test import RandomRecommender, TopPopRecommender
@@ -27,8 +27,10 @@ def run_optimization(rec_class, n_calls, val_percentage):
 
 
 if __name__ == '__main__':
-    rec_class = HybridRecommender
-    n_calls = 20
-    val_percentage = 0.2
 
-    run_optimization(rec_class, n_calls, val_percentage)
+
+    val_percentage = 0.2
+    rec_class = HybridRecommenderWithTopK
+    n_calls = 200
+    utils.optimize_parameters.optimize_parameters(None, None, None, rec_class, n_calls)
+    #run_optimization(rec_class, n_calls, val_percentage)

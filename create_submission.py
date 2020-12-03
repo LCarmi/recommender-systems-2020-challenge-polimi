@@ -12,6 +12,7 @@ from recommenders.slimbpr import SLIM_BPR_Cython
 from recommenders.lightfm import LightFMRecommender
 from recommenders.p3alpha import P3alphaRecommender
 
+import utils.dataset
 
 
 def prepare_submission(users_to_recommend: np.array, recommender: Recommender):
@@ -42,6 +43,7 @@ def run_all_data_train():
 
     submissions = prepare_submission(targets, recommender)
     write_submission(submissions)
+    print("DONE!")
 
 if __name__ == '__main__':
     run_all_data_train()

@@ -4,7 +4,7 @@ import numpy as np
 from recommenders.recommender import Recommender
 from lightfm import LightFM
 import scipy.sparse as sp
-from utils.official.IR_feature_weighting import okapi_BM_25, TF_IDF
+from utils.official.IR_feature_weighting import apply_feature_weighting
 from utils.official.Recommender_utils import check_matrix
 
 
@@ -13,7 +13,7 @@ class LightFMRecommender(Recommender):
 
     def __init__(self, URM: sp.csr_matrix, ICM, exclude_seen=True,
                  item_alpha=1e-4, user_alpha=1e-6, learning_schedule='adadelta', loss='warp', feature_weighting="TF-IDF",
-                 num_components=280, epochs=30, threads=1, K1=1.2, B=0.75):
+                 num_components=280, epochs=30, threads=1, K=1.2, B=0.75):
 
         super().__init__(URM, ICM, exclude_seen)
 
@@ -25,19 +25,11 @@ class LightFMRecommender(Recommender):
         self.threads = threads
         self.loss = loss
         self.feature_weighting = feature_weighting
-        self.K1 = K1
+        self.K = K
         self.B = B
 
     def fit(self):
-        if self.feature_weighting == "BM25":
-            self.URM = self.URM.astype(np.float32)
-            self.URM = okapi_BM_25(self.URM.T, self.K1, self.B).T
-            self.URM = check_matrix(self.URM, 'csr')
-
-        elif self.feature_weighting == "TF-IDF":
-            self.URM = self.URM.astype(np.float32)
-            self.URM = TF_IDF(self.URM.T).T
-            self.URM = check_matrix(self.URM, 'csr')
+        self.URM = apply_feature_weighting(self.URM, self.feature_weighting, K=self.K, B=self.B, transpose=True)
 
         self._train()
 
@@ -60,5 +52,5 @@ class LightFMRecommender(Recommender):
             print("LightFM training model fitted in {:.2f} seconds".format(time.time() - start_time))
 
     def compute_predicted_ratings(self, user_id):
-        return self.model.predict(user_ids=user_id, item_ids=np.arange(self.URM.shape[1]), item_features=None,
+        return self.model.predict(user_ids=int(user_id), item_ids=np.arange(self.URM.shape[1]), item_features=None,
                                   user_features=None, num_threads=self.threads)

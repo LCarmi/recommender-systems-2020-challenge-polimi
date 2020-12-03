@@ -69,8 +69,12 @@ def split_train_test(URM_coo, percentage_validation):
     return URM_train_coo, URM_test_coo
 
 
-if __name__ == '__main__':
-    URM_coo, ICM_coo, targets = load_dataset(base_folder="../data")
+def give_me_splitted_dataset(val_percentage):
+    URM_coo, ICM_coo, targets = load_dataset(base_folder="./data")
+    URM_train_coo, URM_test_coo = split_train_test(URM_coo, val_percentage)
 
-    URM_train_coo, URM_test_coo = split_train_test(URM_coo, 0.2)
-    print("Success")
+    URM_train_csr = URM_train_coo.tocsr()
+    URM_test_csr = URM_test_coo.tocsr()
+    ICM_csr = ICM_coo.tocsr()
+
+    return URM_train_csr, URM_test_csr, ICM_csr, targets

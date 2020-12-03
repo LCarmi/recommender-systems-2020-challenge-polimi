@@ -53,7 +53,7 @@ class ALSMFRecommender(MatrixFactorizationRecommender):
     """ ALTERNATING LEAST SQUARE MATRIX FACTORIZATION RECOMMENDER SYSTEM ALGORITHM """
 
     def __init__(self, URM: sp.csr_matrix, ICM, exclude_seen=True, alpha=29.4, lambda_val=4.98, latent_factors=400,
-                 iterations=15): # orignial 460, 20
+                 iterations=15):  # orignial 460, 20
 
         super().__init__(URM, ICM, exclude_seen)
 
@@ -61,7 +61,7 @@ class ALSMFRecommender(MatrixFactorizationRecommender):
         self.lambda_val = lambda_val
         self.latent_factors = latent_factors
         self.iterations = iterations
-        self.Cui = self.URM.multiply(alpha).astype('double')
+        self.Cui = self.URM.copy().multiply(alpha).astype('double')
 
     def fit(self):
 
@@ -97,3 +97,57 @@ class ALSMFRecommender(MatrixFactorizationRecommender):
             print('ALS Matrix Factorization training computed in {:.2f} minutes'
                   .format((time.time() - start_time) / 60))
 
+
+import implicit as impl
+
+
+class ImplicitALSRecommender(MatrixFactorizationRecommender):
+    """ ALS implementation using the implicit library """
+
+    def __init__(self, URM: sp.csr_matrix, ICM, lambda_val=4.98, latent_factors=400, alpha=29.4,
+                 iterations=15):
+        super().__init__(URM, ICM)
+        self.model = None
+
+        self.lambda_val = lambda_val
+        self.latent_factors = latent_factors
+        self.iterations = iterations
+
+        self.URM = self.URM.copy().multiply(alpha).astype('double')
+
+    def fit(self, model_name='als', verbose=True):
+
+        """ train the ALS model using the implicit module """
+
+        start_time = time.time()
+
+        # creates ALS model
+        if model_name == 'als':
+            self.model = impl.als.AlternatingLeastSquares(factors=self.latent_factors, regularization=self.lambda_val,
+                                                          iterations=self.iterations)
+        elif model_name == 'nmslibals':
+            self.model = impl.approximate_als.NMSLibAlternatingLeastSquares(factors=self.latent_factors,
+                                                                            regularization=self.lambda_val,
+                                                                            iterations=self.iterations)
+        elif model_name == 'faissals':
+            self.model = impl.approximate_als.FaissAlternatingLeastSquares(factors=self.latent_factors,
+                                                                           regularization=self.lambda_val,
+                                                                           iterations=self.iterations)
+        elif model_name == 'annoyals':
+            self.model = impl.approximate_als.AnnoyAlternatingLeastSquares(factors=self.latent_factors,
+                                                                           regularization=self.lambda_val,
+                                                                           iterations=self.iterations)
+        else:
+            exit('Invalid model name')
+
+        # fit the ALS model
+        # since the model is expecting a item-user matrix we need to pass the transpose of URM
+        A = self.URM.T.copy()
+        self.model.fit(A)
+
+        # gets the results of the training
+        self.user_factors = self.model.user_factors
+        self.item_factors = self.model.item_factors
+
+        if verbose:
+            print("IMPLICIT ALS training computed in {:.2f} seconds".format(time.time() - start_time))

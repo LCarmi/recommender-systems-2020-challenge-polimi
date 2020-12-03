@@ -13,7 +13,7 @@ class SSLIMRMSERecommender(Recommender):
         slim implementation that minimizes the Root Mean Squared Error (RMSE)
         there is an option to add side information to the algorithm """
 
-    def __init__(self, URM: sp.csr_matrix, ICM, exclude_seen=True, learning_rate=1e-3, beta=1.0, epochs=2,
+    def __init__(self, URM: sp.csr_matrix, ICM, exclude_seen=True, learning_rate=1e-5, beta=1.0, epochs=135,
                  add_side_info=True):
         super().__init__(URM, ICM, exclude_seen)
         self.learning_rate = learning_rate

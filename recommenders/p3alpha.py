@@ -11,7 +11,7 @@ from sklearn.preprocessing import normalize
 
 from recommenders.recommender import Recommender
 from utils.official.Recommender_utils import check_matrix, similarityMatrixTopK
-from utils.official.IR_feature_weighting import okapi_BM_25, TF_IDF
+from utils.official.IR_feature_weighting import apply_feature_weighting
 
 
 import time, sys
@@ -23,8 +23,8 @@ class P3alphaRecommender(Recommender):
     RECOMMENDER_NAME = "P3alphaRecommender"
 
     def __init__(self, URM: sp.csr_matrix, ICM, exclude_seen=True,
-                 topK=300, alpha=0.46, min_rating=0, implicit=True, normalize_similarity=False,
-                 feature_weighting="TF-IDF"):
+                 topK=385, alpha=0.46, min_rating=0, implicit=True, normalize_similarity=False,
+                 feature_weighting=None, K=1.2, B=0.75):
 
         super().__init__(URM, ICM,exclude_seen)
         self.W_sparse = None
@@ -35,19 +35,13 @@ class P3alphaRecommender(Recommender):
         self.implicit = implicit
         self.normalize_similarity = normalize_similarity
         self.feature_weighting = feature_weighting
+        self.K = K
+        self.B = B
 
 
     def fit(self):
 
-        if self.feature_weighting == "BM25":
-            self.URM = self.URM.astype(np.float32)
-            self.URM = okapi_BM_25(self.URM.T).T
-            self.URM = check_matrix(self.URM, 'csr')
-
-        elif self.feature_weighting == "TF-IDF":
-            self.URM = self.URM.astype(np.float32)
-            self.URM = TF_IDF(self.URM.T).T
-            self.URM = check_matrix(self.URM, 'csr')
+        self.URM = apply_feature_weighting(self.URM, self.feature_weighting, K=self.K, B=self.B, transpose=True)
 
         #
         # if X.dtype != np.float32:

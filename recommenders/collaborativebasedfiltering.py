@@ -1,6 +1,6 @@
 from recommenders.recommender import Recommender
 from utils.official.Compute_Similarity import Compute_Similarity
-from utils.official.IR_feature_weighting import okapi_BM_25, TF_IDF
+from utils.official.IR_feature_weighting import apply_feature_weighting
 from utils.official.Recommender_utils import check_matrix
 
 import numpy as np
@@ -8,8 +8,8 @@ import numpy as np
 
 class UserBasedCFRecommender(Recommender):
 
-    def __init__(self, URM, ICM, exclude_seen=True, topK=350, shrink=8.9, normalize=True, similarity="tanimoto",
-                 asymmetric_alpha=0.77, feature_weighting=None):
+    def __init__(self, URM, ICM, exclude_seen=True, topK=115, shrink=6, normalize=True, similarity="tanimoto",
+                 asymmetric_alpha=0.77, feature_weighting=None, K=40, B=0.75):
         super().__init__(URM, ICM, exclude_seen)
         self.W_sparse = None
 
@@ -19,18 +19,12 @@ class UserBasedCFRecommender(Recommender):
         self.similarity = similarity
         self.asymmetric_alpha = asymmetric_alpha
         self.feature_weighting = feature_weighting
+        self.K = K
+        self.B = B
 
     def fit(self):
 
-        if self.feature_weighting == "BM25":
-            self.URM = self.URM.astype(np.float32)
-            self.URM = okapi_BM_25(self.URM.T).T
-            self.URM = check_matrix(self.URM, 'csr')
-
-        elif self.feature_weighting == "TF-IDF":
-            self.URM = self.URM.astype(np.float32)
-            self.URM = TF_IDF(self.URM.T).T
-            self.URM = check_matrix(self.URM, 'csr')
+        self.URM = apply_feature_weighting(self.URM, self.feature_weighting, K=self.K, B=self.B, transpose=True)
 
         similarity_object = Compute_Similarity(self.URM.T,
                                                shrink=self.shrink,
@@ -47,8 +41,8 @@ class UserBasedCFRecommender(Recommender):
 
 class ItemBasedCFRecommender(Recommender):
 
-    def __init__(self, URM, ICM, exclude_seen=True, topK=3333, shrink=500, normalize=True, similarity="cosine",
-                 asymmetric_alpha=0.5, feature_weighting='TF-IDF'):
+    def __init__(self, URM, ICM, exclude_seen=True, topK=304, shrink=475, normalize=True, similarity="cosine",
+                 asymmetric_alpha=0.5, feature_weighting="TF-IDF", K=1.2, B=0.75):
         super().__init__(URM, ICM, exclude_seen)
         self.W_sparse = None
 
@@ -58,18 +52,11 @@ class ItemBasedCFRecommender(Recommender):
         self.similarity = similarity
         self.asymmetric_alpha = asymmetric_alpha
         self.feature_weighting = feature_weighting
+        self.K = K
+        self.B = B
 
     def fit(self):
-
-        if self.feature_weighting == "BM25":
-            self.URM = self.URM.astype(np.float32)
-            self.URM = okapi_BM_25(self.URM.T).T
-            self.URM = check_matrix(self.URM, 'csr')
-
-        elif self.feature_weighting == "TF-IDF":
-            self.URM = self.URM.astype(np.float32)
-            self.URM = TF_IDF(self.URM.T).T
-            self.URM = check_matrix(self.URM, 'csr')
+        self.URM = apply_feature_weighting(self.URM, self.feature_weighting, K=self.K, B=self.B, transpose=True)
 
         similarity_object = Compute_Similarity(self.URM,
                                                shrink=self.shrink,
