@@ -8,8 +8,8 @@ import sys
 class _MatrixFactorization_Cython(MatrixFactorizationRecommender):
 
     def __init__(self, URM: sp.csr_matrix, ICM, algorithm_name="MF_BPR", exclude_seen=True,
-                 , epochs=300, batch_size=1000,
-                 num_factors=10, positive_threshold_BPR=None,
+                 epochs=300, batch_size=1000,
+                 num_factors=400, positive_threshold_BPR=None,
                  learning_rate=0.001, use_bias=True,
                  sgd_mode='sgd',
                  negative_interactions_quota=0.0,
@@ -89,25 +89,30 @@ class _MatrixFactorization_Cython(MatrixFactorizationRecommender):
                                                                 init_std_dev=self.init_std_dev,
                                                                 verbose=self.verbose)
         self._prepare_model_for_validation()
-        self._update_best_model()
+        #self._update_best_model()
 
-        self._train_with_early_stopping(epochs,
-                                        algorithm_name=self.algorithm_name,
-                                        **earlystopping_kwargs)
+        epochs_current = 0
+        lower_epochs = 0
+        while epochs_current < self.epochs:
+            # run an epoch
+            self.cythonEpoch.epochIteration_Cython()
+            epochs_current+=1
 
-        self.user_factors = self.USER_factors_best
-        self.item_factors = self.ITEM_factors_best
+        self._prepare_model_for_validation()
 
-        if self.use_bias:
-            self.USER_bias = self.USER_bias_best
-            self.ITEM_bias = self.ITEM_bias_best
-            self.GLOBAL_bias = self.GLOBAL_bias_best
+        #self.user_factors = self.USER_factors_best
+        #self.item_factors = self.ITEM_factors_best
+
+        #if self.use_bias:
+        #    self.USER_bias = self.USER_bias_best
+        #    self.ITEM_bias = self.ITEM_bias_best
+        #    self.GLOBAL_bias = self.GLOBAL_bias_best
 
         sys.stdout.flush()
 
     def _prepare_model_for_validation(self):
         self.user_factors = self.cythonEpoch.get_USER_factors()
-        self.ITEM_factors = self.cythonEpoch.get_ITEM_factors()
+        self.item_factors = self.cythonEpoch.get_ITEM_factors()
 
         if self.use_bias:
             self.USER_bias = self.cythonEpoch.get_USER_bias()

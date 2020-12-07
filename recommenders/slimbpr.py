@@ -12,8 +12,8 @@ from utils.official.Recommender_utils import similarityMatrixTopK
 class SLIM_BPR_Cython(Recommender):
 
     def __init__(self, URM, ICM, exclude_seen=True,
-                 epochs=160, symmetric=False,
-                 batch_size=1000, lambda_i=0.636, lambda_j=0.967, learning_rate=1e-2, topK=470,
+                 epochs=200, symmetric=False,
+                 batch_size=1000, lambda_i=1.009, lambda_j=0.372, learning_rate=1e-3, topK=229,
                  sgd_mode='adagrad', gamma=0.995, beta_1=0.9, beta_2=0.999,
                  patience=None, validation_split=0.2,
                  verbose=True

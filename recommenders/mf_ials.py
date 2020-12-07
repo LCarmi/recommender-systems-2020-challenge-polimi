@@ -104,9 +104,9 @@ import implicit as impl
 class ImplicitALSRecommender(MatrixFactorizationRecommender):
     """ ALS implementation using the implicit library """
 
-    def __init__(self, URM: sp.csr_matrix, ICM, lambda_val=4.98, latent_factors=400, alpha=29.4,
-                 iterations=15):
-        super().__init__(URM, ICM)
+    def __init__(self, URM: sp.csr_matrix, ICM, lambda_val=16, latent_factors=165, alpha=78.2,
+                 iterations=25, exclude_seen=True):
+        super().__init__(URM, ICM, exclude_seen)
         self.model = None
 
         self.lambda_val = lambda_val

@@ -18,12 +18,12 @@ from recommenders.test import RandomRecommender, TopPopRecommender
 from recommenders.recommender import Recommender
 from recommenders.slimbpr import SLIM_BPR_Cython
 from recommenders.lightfm import LightFMRecommender
-from recommenders.p3alpha import P3alphaRecommender
+from recommenders.p3alpha import P3alphaRecommender, RP3betaRecommender
 
 names = {}
 spaces = {}
 
-names[CBFRecommender] = "CBFRecommender_BM_25_refine"
+names[CBFRecommender] = "CBFRecommender__kcross" #Done and fixed
 spaces[CBFRecommender] = [
     Integer(1, 2000, name='topK'),
     Real(1, 500, name='shrink'),
@@ -34,21 +34,19 @@ spaces[CBFRecommender] = [
     Real(0.01, 1, name='B'),
 ]
 
-names[UserBasedCFRecommender] = "UserBasedCFRecommender_BM_25_refine"
+names[UserBasedCFRecommender] = "UserBasedCFRecommender_kcross_3" #TODO
 spaces[UserBasedCFRecommender] = [
     Integer(1, 500, name='topK'),
-    Real(1, 20, name='shrink'),
+    Real(1, 50, name='shrink'),
     Categorical([True], name='normalize'),
     Categorical(['tanimoto'], name='similarity'),
-    Categorical(["BM25"], name='feature_weighting'),
-    Real(0.1, 200, name='K'),
-    Real(0.01, 1, name='B'),
+    Categorical([None, "TF-IDF"], name='feature_weighting')
 ]
 
-names[ItemBasedCFRecommender] = "ItemBasedCFRecommender_TF_IDF_refine"
+names[ItemBasedCFRecommender] = "ItemBasedCFRecommender_kcross_2" #Done and fixed
 spaces[ItemBasedCFRecommender] = [
-    Integer(1, 5000, name='topK'),
-    Real(1, 500, name='shrink'),
+    Integer(4500, 10000, name='topK'),
+    Real(300, 1000, name='shrink'),
     Categorical([True], name='normalize'),
     Categorical(["cosine"], name='similarity'),
     Categorical(["TF-IDF"], name='feature_weighting'),
@@ -56,28 +54,29 @@ spaces[ItemBasedCFRecommender] = [
     #Real(0.1, 1, name='B'),
 ]
 
-names[SLIM_BPR_Cython] = "SLIM_BPR_Cython_smaller"
+names[SLIM_BPR_Cython] = "SLIM_BPR_Cython_kcross" # Done
 spaces[SLIM_BPR_Cython] = [
-    Integer(1, 2000, name='topK'),
+    Integer(1, 400, name='topK'),
     Categorical([1e-4, 1e-3, 1e-2], name="learning_rate"),
-    Real(0, 1, name='lambda_i'),
-    Real(0, 1, name='lambda_j'),
-    Categorical([True, False], name='symmetric'),
-    Integer(1, 200, name="epochs")
+    Real(0, 2, name='lambda_i'),
+    Real(0, 2, name='lambda_j'),
+    Categorical([False], name='symmetric'),
+    Categorical([200], name='epochs'), #Integer(1, 200, name="epochs")
 ]
 
-names[SSLIMRMSERecommender] = "SSLIMRMSERecommender"
+names[SSLIMRMSERecommender] = "SSLIMRMSERecommender_kcross"
 spaces[SSLIMRMSERecommender] = [
-    Integer(1, 300, name='epochs'),
-    Real(0, 1, name='beta'),
-    Categorical([1e-2, 1e-3, 1e-4, 1e-5], name='learning_rate'),
-    Categorical([True, False], name='add_side_info'),
+    Integer(50, 100, name='epochs'),
+    Real(0, 3, name='beta'),
+    Real(1e-5, 1e-3, name='l1_reg'),
+    Categorical([1e-3, 1e-4, 1e-5], name='learning_rate'),
+    Categorical([True], name='add_side_info'),
 ]
 
-names[SVDRecommender] = "SVDRecommender"
+names[SVDRecommender] = "SVDRecommender_kcross" # Done
 spaces[SVDRecommender] = [
-    Integer(1, 600, name='latent_factors'),
-    Categorical([True, False], name='scipy'),
+    Integer(100, 600, name='latent_factors'),
+    Categorical([True], name='scipy'),
 ]
 
 names[ALSMFRecommender] = "ALSMFRecommender"
@@ -85,40 +84,11 @@ spaces[ALSMFRecommender] = [
     Real(0, 100, name='alpha'),
     Real(0, 15, name='lambda_val'),
 ]
-names[ImplicitALSRecommender] = "ImplicitALSRecommender"
+names[ImplicitALSRecommender] = "ImplicitALSRecommender_kcross_2" #TODO
 spaces[ImplicitALSRecommender] = [
-    Integer(0, 500, name='latent_factors'),
-    Real(0, 10, name='lambda_val'),
-]
-
-names[HybridRecommender] = "HybridRecommender"
-spaces[HybridRecommender] = [
-    Categorical([0.0], name="TopPopweight"),
-    Real(0, 5, name='IBCFweight'),
-    Real(0, 5, name='UBCFweight'),
-    Real(0, 5, name='CBFweight'),
-    Categorical([0.0], name="SSLIMweight"),
-    Real(0, 5, name='ALSweight'),
-    Categorical([0.0], name="LFMCFweight"),
-    Real(0, 5, name='SLIMBPRweight'),
-    Categorical([0.0], name="SVDweight"),
-    Real(0, 1, name='P3weight'),
-    Categorical([True], name="normalize")
-]
-
-names[HybridRecommenderWithTopK] = "HybridRecommenderWithTopK"
-spaces[HybridRecommenderWithTopK] = [
-    Real(0, 1, name='TopPopweight'),
-    Real(0, 5, name='IBCFweight'),
-    Real(0, 5, name='UBCFweight'),
-    Real(0, 5, name='CBFweight'),
-    Categorical([0.0], name="SSLIMweight"),
-    Real(0, 5, name='ALSweight'),
-    Categorical([0.0], name="LFMCFweight"),
-    Real(0, 5, name='SLIMBPRweight'),
-    Categorical([0.0], name="SVDweight"),
-    Real(0, 5, name='P3weight'),
-    Categorical([True], name="normalize")
+    Integer(100, 800, name='latent_factors'),
+    Real(0, 20, name='lambda_val'),
+    Real(0, 100, name='alpha'),
 ]
 
 names[LightFMRecommender] = "LightFMRecommender"
@@ -131,16 +101,57 @@ spaces[LightFMRecommender] = [
     Categorical([None, "BM25", "TF-IDF"], name='feature_weighting')
 ]
 
-names[P3alphaRecommender] = "P3alphaRecommender_no_BM_25"
+names[P3alphaRecommender] = "P3alphaRecommender_kcross_2" # Discarded in favor of RP3Beta :)
 spaces[P3alphaRecommender] = [
-    Integer(0, 400, name="topK"),
+    Integer(400, 600, name="topK"),
     Real(0, 1, name='alpha'),
     Categorical([True,False], name="normalize_similarity"),
     Categorical([None, "TF-IDF"], name='feature_weighting')
     #Real(0.1, 200, name='K'),
     #Real(0.01, 1, name='B'),
-
 ]
+
+
+names[RP3betaRecommender] = "RP3betaRecommender_kcross2" #Done and fixed
+spaces[RP3betaRecommender] = [
+    Integer(600, 1200, name="topK"),
+    Real(0, 1, name='alpha'),
+    Real(0, 1, name='beta'),
+    Categorical([False], name="normalize_similarity"),
+    Categorical(["TF-IDF"], name='feature_weighting')
+]
+
+# names[HybridRecommender] = "HybridRecommender"
+# spaces[HybridRecommender] = [
+#     Categorical([0.0], name="TopPopweight"),
+#     Real(0, 5, name='IBCFweight'),
+#     Real(0, 5, name='UBCFweight'),
+#     Real(0, 5, name='CBFweight'),
+#     Categorical([0.0], name="SSLIMweight"),
+#     Real(0, 5, name='ALSweight'),
+#     Categorical([0.0], name="LFMCFweight"),
+#     Real(0, 5, name='SLIMBPRweight'),
+#     Categorical([0.0], name="SVDweight"),
+#     Real(0, 1, name='P3weight'),
+#     Categorical([True], name="normalize")
+# ]
+
+names[HybridRecommenderWithTopK] = "HybridRecommenderWithTopK_kcross_mid_yes_normalize_small_k"
+spaces[HybridRecommenderWithTopK] = [
+#    Real(0, 1, name='TopPopweight'),
+    Real(0, 5, name='IBCFweight'),
+    Real(0, 5, name='UBCFweight'),
+    Real(0, 5, name='CBFweight'),
+    Real(0, 5, name="SSLIMweight"),
+    Real(0, 5, name='ALSweight'),
+    Categorical([0.0], name="LFMCFweight"),
+    Real(0, 5, name='SLIMBPRweight'),
+    Real(0, 5, name="SVDweight"),
+    Real(0, 5, name='P3weight'),
+    Real(0, 5, name='RP3weight'),
+    Categorical([True], name="normalize")
+]
+
 
 def load_df(name):
     filename = "./optimization_data/" + name + ".res"
@@ -181,44 +192,55 @@ def create_df(param_tuples, param_names, value_list, metric="MAP"):
     return df
 
 
-def optimize_parameters(URM, ICM, URM_test, URMrecommender_class: type, n_calls=100, n_random_starts=None, seed=None, k=5, validation_percentage=0.05):
+def optimize_parameters(URMrecommender_class: type, n_calls=100, k=5, validation_percentage=0.05, n_random_starts=None, seed=None, limit_at=1000):
     if n_random_starts is None:
         n_random_starts = int(0.5 * n_calls)
 
     name = names[URMrecommender_class]
     space = spaces[URMrecommender_class]
 
-    if URMrecommender_class == HybridRecommender:
-        recommender = URMrecommender_class(URM, ICM)
+    if validation_percentage > 0:
+        print("Using randomized datasets. k={}, val_percentage={}".format(k, validation_percentage))
+        URM_trains, URM_tests, ICM_trains = utils.dataset.give_me_randomized_k_folds_with_val_percentage(k, validation_percentage)
+    else:
+        print("Splitting original datasets in N_folds:{}".format(k))
+        URM_trains, URM_tests, ICM_trains = utils.dataset.give_me_k_folds(k)
 
-        @use_named_args(space)
-        def objective(**params):
-            recommender.fit(**params)
-            _, _, MAP = utils.evaluate.evaluate_algorithm(URM_test, recommender)
-            return -MAP
-    elif URMrecommender_class == HybridRecommenderWithTopK:
+    if len(URM_trains) > limit_at:
+        URM_trains = URM_trains[:limit_at]
+        URM_tests = URM_tests[:limit_at]
+        ICM_trains = ICM_trains[:limit_at]
+
+    assert(len(URM_trains) == len(URM_tests) and len(URM_tests) == len(ICM_trains))
+    print("Starting optimization: N_folds={}".format(len(URM_trains)))
+
+    if URMrecommender_class == HybridRecommender or URMrecommender_class == HybridRecommenderWithTopK:
         recommenders = []
-        tests = []
-        for _ in range(k):
-            URM_train_csr, URM_test_csr, ICM_csr, targets = utils.dataset.give_me_splitted_dataset(validation_percentage)
+
+        for URM_train_csr, ICM_csr in zip(URM_trains, ICM_trains):
             recommenders.append(URMrecommender_class(URM_train_csr, ICM_csr))
-            tests.append(URM_test_csr)
 
         @use_named_args(space)
         def objective(**params):
             scores = []
-            for recommender, test in zip(recommenders, tests):
+            for recommender, test in zip(recommenders, URM_tests):
                 recommender.fit(**params)
                 _, _, MAP = utils.evaluate.evaluate_algorithm(test, recommender)
                 scores.append(-MAP)
-            return sum(scores)/len(scores)
+            print("Just Evaluated this: {}".format(params))
+            return sum(scores) / len(scores)
+
     else:
         @use_named_args(space)
         def objective(**params):
-            recommender = URMrecommender_class(URM, ICM, **params)
-            recommender.fit()
-            _, _, MAP = utils.evaluate.evaluate_algorithm(URM_test, recommender)
-            return -MAP
+            scores = []
+            for URM_train_csr, ICM_csr, test in zip(URM_trains, ICM_trains, URM_tests):
+                recommender = URMrecommender_class(URM_train_csr, ICM_csr, **params)
+                recommender.fit()
+                _, _, MAP = utils.evaluate.evaluate_algorithm(test, recommender)
+                scores.append(-MAP)
+            print("Just Evaluated this: {}".format(params))
+            return sum(scores) / len(scores)
 
     # xs, ys = _load_xy(name)
     param_names = [v.name for v in spaces[URMrecommender_class]]

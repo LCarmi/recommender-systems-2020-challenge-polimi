@@ -2,7 +2,7 @@ import numpy as np
 
 from recommenders.collaborativebasedfiltering import UserBasedCFRecommender, ItemBasedCFRecommender
 from recommenders.contentbasedfiltering import CBFRecommender
-from recommenders.hybrid import HybridRecommender
+from recommenders.hybrid import HybridRecommender, HybridRecommenderWithTopK
 from recommenders.mf_ials import ALSMFRecommender
 from recommenders.sslimrmse import SSLIMRMSERecommender
 from recommenders.svd import SVDRecommender
@@ -38,7 +38,7 @@ def run_all_data_train():
     URM_train_csr = URM_coo.tocsr()
     ICM_csr = ICM_coo.tocsr()
 
-    recommender = HybridRecommender(URM_train_csr, ICM_csr)
+    recommender = HybridRecommenderWithTopK(URM_train_csr, ICM_csr)
     recommender.fit()
 
     submissions = prepare_submission(targets, recommender)

@@ -114,7 +114,7 @@ def similarityMatrixTopK(item_weights, k=100, verbose = False):
     cols_indptr.append(len(data))
 
     # During testing CSR is faster
-    W_sparse = sps.csc_matrix((data, rows_indices, cols_indptr), shape=(nitems, nitems), dtype=np.float32)
+    W_sparse = sps.csr_matrix((data, rows_indices, cols_indptr), shape=(nitems, nitems), dtype=np.float32)
 
     if verbose:
         print("Sparse TopK matrix generated in {:.2f} seconds".format(time.time() - start_time))

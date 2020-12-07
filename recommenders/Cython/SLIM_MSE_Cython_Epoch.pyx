@@ -1,9 +1,10 @@
 import numpy as np
 import time
+import scipy.sparse as sps
 
 from libc.stdlib cimport rand, srand, RAND_MAX
 
-def train_multiple_epochs(URM_train, learning_rate_input, n_epochs):
+def train_multiple_epochs(URM_train, learning_rate_input, n_epochs, l1_regularization_coeff):
 
     URM_train_coo = URM_train.tocoo()
     cdef int n_items = URM_train.shape[1]
@@ -14,6 +15,7 @@ def train_multiple_epochs(URM_train, learning_rate_input, n_epochs):
     cdef int[:] URM_train_indices = URM_train.indices
     cdef int[:] URM_train_indptr = URM_train.indptr
     cdef double[:] URM_train_data = URM_train.data
+    cdef double l1_reg = l1_regularization_coeff
 
     cdef double[:,:] item_item_S = np.zeros((n_items, n_items), dtype = np.float)
     cdef double learning_rate = learning_rate_input
@@ -55,7 +57,7 @@ def train_multiple_epochs(URM_train, learning_rate_input, n_epochs):
             for index in range(start_profile, end_profile):
                 profile_item_id = URM_train_indices[index]
                 profile_rating = URM_train_data[index]
-                item_item_S[profile_item_id,item_id] += learning_rate * prediction_error * profile_rating
+                item_item_S[profile_item_id,item_id] += learning_rate * prediction_error * profile_rating - l1_reg*item_item_S[profile_item_id,item_id]
 
             # Print some stats
             if (sample_num +1)% 1000000 == 0:
@@ -69,4 +71,4 @@ def train_multiple_epochs(URM_train, learning_rate_input, n_epochs):
 
         print("Epoch {} complete in in {:.2f} seconds, loss is {:.3E}. Samples per second {:.2f}".format(n_epoch+1, time.time() - start_time, loss/(sample_num+1), samples_per_second))
 
-    return np.array(item_item_S), loss/(sample_num+1), samples_per_second
+    return sps.csr_matrix(item_item_S), loss/(sample_num+1), samples_per_second

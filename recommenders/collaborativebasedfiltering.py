@@ -8,8 +8,8 @@ import numpy as np
 
 class UserBasedCFRecommender(Recommender):
 
-    def __init__(self, URM, ICM, exclude_seen=True, topK=115, shrink=6, normalize=True, similarity="tanimoto",
-                 asymmetric_alpha=0.77, feature_weighting=None, K=40, B=0.75):
+    def __init__(self, URM, ICM, exclude_seen=True, topK=117, shrink=26.66, normalize=True, similarity="tanimoto",
+                 asymmetric_alpha=0.77, feature_weighting="TF-IDF", K=40, B=0.75):
         super().__init__(URM, ICM, exclude_seen)
         self.W_sparse = None
 
@@ -41,7 +41,7 @@ class UserBasedCFRecommender(Recommender):
 
 class ItemBasedCFRecommender(Recommender):
 
-    def __init__(self, URM, ICM, exclude_seen=True, topK=304, shrink=475, normalize=True, similarity="cosine",
+    def __init__(self, URM, ICM, exclude_seen=True, topK=5000, shrink=500, normalize=True, similarity="cosine",
                  asymmetric_alpha=0.5, feature_weighting="TF-IDF", K=1.2, B=0.75):
         super().__init__(URM, ICM, exclude_seen)
         self.W_sparse = None

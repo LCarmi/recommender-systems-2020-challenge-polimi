@@ -13,7 +13,7 @@ class SVDRecommender(MatrixFactorizationRecommender):
 
     N_CONFIG = 0
 
-    def __init__(self, URM: sp.csr_matrix, ICM, exclude_seen=True, latent_factors=20, scipy=True):
+    def __init__(self, URM: sp.csr_matrix, ICM, exclude_seen=True, latent_factors=480, scipy=True):
 
         super().__init__(URM, ICM, exclude_seen)
 

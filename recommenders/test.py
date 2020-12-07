@@ -18,8 +18,8 @@ class RandomRecommender():
 
 
 class TopPopRecommender(Recommender):
-    def __init__(self, URM: sp.csr_matrix, ICM):
-        super().__init__(URM, ICM)
+    def __init__(self, URM: sp.csr_matrix, ICM, exclude_seen=True):
+        super().__init__(URM, ICM, exclude_seen)
         self.popular_items = None
         self.item_popularity = None
 

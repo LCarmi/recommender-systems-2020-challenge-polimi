@@ -386,7 +386,8 @@ cdef class SLIM_BPR_Cython_Epoch:
 
             else:
                 if self.final_model_sparse_weights:
-                    return similarityMatrixTopK(np.array(self.S_dense.T), k=self.topK).T
+                    return similarityMatrixTopK(sps.csr_matrix(self.S_dense), k=self.topK)
+                    #return similarityMatrixTopK(np.array(self.S_dense.T), k=self.topK).T
                 else:
                     return np.array(self.S_dense)
 
