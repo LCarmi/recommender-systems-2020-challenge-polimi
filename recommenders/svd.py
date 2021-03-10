@@ -5,6 +5,7 @@ from scipy.sparse.linalg import svds
 from sklearn.utils.extmath import randomized_svd
 
 from recommenders.recommender import MatrixFactorizationRecommender
+from utils.official.IR_feature_weighting import apply_feature_weighting
 
 
 class SVDRecommender(MatrixFactorizationRecommender):
@@ -13,14 +14,19 @@ class SVDRecommender(MatrixFactorizationRecommender):
 
     N_CONFIG = 0
 
-    def __init__(self, URM: sp.csr_matrix, ICM, exclude_seen=True, latent_factors=480, scipy=True):
-
+    def __init__(self, URM: sp.csr_matrix, ICM, exclude_seen=True, latent_factors=590, scipy=True,
+                 feature_weighting="TF-IDF-Transpose", K=1.2, B=0.75):
         super().__init__(URM, ICM, exclude_seen)
 
         self.latent_factors = latent_factors
         self.scipy = scipy
 
+        self.feature_weighting = feature_weighting
+        self.K = K
+        self.B = B
+
     def fit(self):
+        self.URM = apply_feature_weighting(self.URM, self.feature_weighting, K=self.K, B=self.B)
         self._train()
 
     def _train(self, verbose=True):
@@ -49,3 +55,13 @@ class SVDRecommender(MatrixFactorizationRecommender):
         if verbose:
             print('SVD Matrix Factorization training computed in {:.2f} minutes'
                   .format((time.time() - start_time) / 60))
+
+
+class SVDRecommenderSI(SVDRecommender):
+
+    def __init__(self, URM: sp.csr_matrix, ICM, exclude_seen=True, latent_factors=590, scipy=True,
+                 feature_weighting="TF-IDF-Transpose", K=1.2, B=0.75,
+                 omega=3.17):
+        super().__init__(URM, ICM, exclude_seen, latent_factors, scipy, feature_weighting, K, B)
+
+        self.add_side_information(omega)

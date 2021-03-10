@@ -70,24 +70,21 @@ def _TF_IDF(dataMatrix):
     return dataMatrix.tocsr()
 
 
-def apply_feature_weighting(data, feature_weighting, K=1.2, B=0.75, transpose=False):
+def apply_feature_weighting(data, feature_weighting, K=1.2, B=0.75):
+
     if feature_weighting is None:
         return data
+
+    data = data.astype(np.float32)
+    if feature_weighting == "BM25-Transpose":
+        data = _okapi_BM_25(data.T, K1=K, B=B).T
     elif feature_weighting == "BM25":
-        data = data.astype(np.float32)
-        if transpose:
-            data = _okapi_BM_25(data.T).T
-        else:
-            data = _okapi_BM_25(data)
-        data = check_matrix(data, 'csr')
-        return data
+        data = _okapi_BM_25(data, K1=K, B=B)
+    elif feature_weighting == "TF-IDF-Transpose":
+        data = _TF_IDF(data.T).T
     elif feature_weighting == "TF-IDF":
-        data = data.astype(np.float32)
-        if transpose:
-            data = _TF_IDF(data.T).T
-        else:
-            data = _TF_IDF(data)
-        data = check_matrix(data, 'csr')
-        return data
+        data = _TF_IDF(data)
     else:
         raise NotImplementedError()
+    data = check_matrix(data, 'csr')
+    return data

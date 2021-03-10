@@ -3,6 +3,7 @@ import time
 import scipy.sparse as sp
 
 from recommenders.recommender import MatrixFactorizationRecommender
+from utils.official.IR_feature_weighting import apply_feature_weighting
 
 
 def non_zeros(m, row):
@@ -52,8 +53,9 @@ def least_squares_cg(Cui, X, Y, lambda_val, cg_steps=3):
 class ALSMFRecommender(MatrixFactorizationRecommender):
     """ ALTERNATING LEAST SQUARE MATRIX FACTORIZATION RECOMMENDER SYSTEM ALGORITHM """
 
-    def __init__(self, URM: sp.csr_matrix, ICM, exclude_seen=True, alpha=29.4, lambda_val=4.98, latent_factors=400,
-                 iterations=15):  # orignial 460, 20
+    def __init__(self, URM: sp.csr_matrix, ICM, lambda_val=6.42, latent_factors=500, alpha=25.8,
+                 iterations=15, exclude_seen=True, feature_weighting="TF-IDF", K=1.2, B=0.75,
+                 omega=14.5, add_side_info=True):
 
         super().__init__(URM, ICM, exclude_seen)
 
@@ -61,9 +63,17 @@ class ALSMFRecommender(MatrixFactorizationRecommender):
         self.lambda_val = lambda_val
         self.latent_factors = latent_factors
         self.iterations = iterations
-        self.Cui = self.URM.copy().multiply(alpha).astype('double')
+        self.feature_weighting = feature_weighting
+        self.K = K
+        self.B = B
+
+        self.URM = self.URM.multiply(alpha).astype('double')
+
+        if add_side_info:
+            self.add_side_information(omega)
 
     def fit(self):
+        self.Cui = apply_feature_weighting(self.URM, self.feature_weighting, K=self.K, B=self.B)
 
         """ Fits the ALS MF model """
 
@@ -104,18 +114,27 @@ import implicit as impl
 class ImplicitALSRecommender(MatrixFactorizationRecommender):
     """ ALS implementation using the implicit library """
 
-    def __init__(self, URM: sp.csr_matrix, ICM, lambda_val=16, latent_factors=165, alpha=78.2,
-                 iterations=25, exclude_seen=True):
+    def __init__(self, URM: sp.csr_matrix, ICM, lambda_val=6.42, latent_factors=500, alpha=25.8,
+                 iterations=15, exclude_seen=True, feature_weighting="TF-IDF", K=1.2, B=0.75,
+                 omega=14.5, add_side_info=True):
         super().__init__(URM, ICM, exclude_seen)
         self.model = None
 
         self.lambda_val = lambda_val
         self.latent_factors = latent_factors
         self.iterations = iterations
+        self.feature_weighting = feature_weighting
+        self.K = K
+        self.B = B
 
-        self.URM = self.URM.copy().multiply(alpha).astype('double')
+        self.URM = self.URM.multiply(alpha).astype('double')
+
+        if add_side_info:
+            self.add_side_information(omega)
 
     def fit(self, model_name='als', verbose=True):
+
+        self.URM = apply_feature_weighting(self.URM, self.feature_weighting, K=self.K, B=self.B)
 
         """ train the ALS model using the implicit module """
 
@@ -128,7 +147,8 @@ class ImplicitALSRecommender(MatrixFactorizationRecommender):
         elif model_name == 'nmslibals':
             self.model = impl.approximate_als.NMSLibAlternatingLeastSquares(factors=self.latent_factors,
                                                                             regularization=self.lambda_val,
-                                                                            iterations=self.iterations)
+                                                                            iterations=self.iterations,
+                                                                            )
         elif model_name == 'faissals':
             self.model = impl.approximate_als.FaissAlternatingLeastSquares(factors=self.latent_factors,
                                                                            regularization=self.lambda_val,

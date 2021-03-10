@@ -9,4 +9,4 @@ from recommenders.test import RandomRecommender, TopPopRecommender
 from recommenders.recommender import Recommender
 from recommenders.slimbpr import SLIM_BPR_Cython
 from recommenders.lightfm import LightFMRecommender
-from recommenders.p3alpha import P3alphaRecommender
+from recommenders.graphbased import P3alphaRecommender

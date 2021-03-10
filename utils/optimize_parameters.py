@@ -1,156 +1,12 @@
 import itertools
 import os
 import pandas as pd
-
 import skopt
-from skopt.space import Real, Integer, Categorical
 from skopt.utils import use_named_args
 
 import utils.evaluate
-
-from recommenders.collaborativebasedfiltering import UserBasedCFRecommender, ItemBasedCFRecommender
-from recommenders.contentbasedfiltering import CBFRecommender
-from recommenders.hybrid import HybridRecommender, HybridRecommenderWithTopK
-from recommenders.mf_ials import ALSMFRecommender, ImplicitALSRecommender
-from recommenders.sslimrmse import SSLIMRMSERecommender
-from recommenders.svd import SVDRecommender
-from recommenders.test import RandomRecommender, TopPopRecommender
-from recommenders.recommender import Recommender
-from recommenders.slimbpr import SLIM_BPR_Cython
-from recommenders.lightfm import LightFMRecommender
-from recommenders.p3alpha import P3alphaRecommender, RP3betaRecommender
-
-names = {}
-spaces = {}
-
-names[CBFRecommender] = "CBFRecommender__kcross" #Done and fixed
-spaces[CBFRecommender] = [
-    Integer(1, 2000, name='topK'),
-    Real(1, 500, name='shrink'),
-    Categorical([True, False], name='normalize'),
-    Categorical(["cosine", "jaccard", 'tanimoto', 'dice'], name='similarity'),
-    Categorical(["BM25"], name='feature_weighting'),
-    Real(0.1, 200, name='K'),
-    Real(0.01, 1, name='B'),
-]
-
-names[UserBasedCFRecommender] = "UserBasedCFRecommender_kcross_3" #TODO
-spaces[UserBasedCFRecommender] = [
-    Integer(1, 500, name='topK'),
-    Real(1, 50, name='shrink'),
-    Categorical([True], name='normalize'),
-    Categorical(['tanimoto'], name='similarity'),
-    Categorical([None, "TF-IDF"], name='feature_weighting')
-]
-
-names[ItemBasedCFRecommender] = "ItemBasedCFRecommender_kcross_2" #Done and fixed
-spaces[ItemBasedCFRecommender] = [
-    Integer(4500, 10000, name='topK'),
-    Real(300, 1000, name='shrink'),
-    Categorical([True], name='normalize'),
-    Categorical(["cosine"], name='similarity'),
-    Categorical(["TF-IDF"], name='feature_weighting'),
-    #Real(0.1, 200, name='K'),
-    #Real(0.1, 1, name='B'),
-]
-
-names[SLIM_BPR_Cython] = "SLIM_BPR_Cython_kcross" # Done
-spaces[SLIM_BPR_Cython] = [
-    Integer(1, 400, name='topK'),
-    Categorical([1e-4, 1e-3, 1e-2], name="learning_rate"),
-    Real(0, 2, name='lambda_i'),
-    Real(0, 2, name='lambda_j'),
-    Categorical([False], name='symmetric'),
-    Categorical([200], name='epochs'), #Integer(1, 200, name="epochs")
-]
-
-names[SSLIMRMSERecommender] = "SSLIMRMSERecommender_kcross"
-spaces[SSLIMRMSERecommender] = [
-    Integer(50, 100, name='epochs'),
-    Real(0, 3, name='beta'),
-    Real(1e-5, 1e-3, name='l1_reg'),
-    Categorical([1e-3, 1e-4, 1e-5], name='learning_rate'),
-    Categorical([True], name='add_side_info'),
-]
-
-names[SVDRecommender] = "SVDRecommender_kcross" # Done
-spaces[SVDRecommender] = [
-    Integer(100, 600, name='latent_factors'),
-    Categorical([True], name='scipy'),
-]
-
-names[ALSMFRecommender] = "ALSMFRecommender"
-spaces[ALSMFRecommender] = [
-    Real(0, 100, name='alpha'),
-    Real(0, 15, name='lambda_val'),
-]
-names[ImplicitALSRecommender] = "ImplicitALSRecommender_kcross_2" #TODO
-spaces[ImplicitALSRecommender] = [
-    Integer(100, 800, name='latent_factors'),
-    Real(0, 20, name='lambda_val'),
-    Real(0, 100, name='alpha'),
-]
-
-names[LightFMRecommender] = "LightFMRecommender"
-spaces[LightFMRecommender] = [
-    Categorical(["warp", "bpr"], name="loss"),
-    Categorical([1e-3, 1e-4, 1e-5, 1e-6], name='item_alpha'),
-    Categorical([1e-3, 1e-4, 1e-5, 1e-6], name='user_alpha'),
-    Integer(200, 400, name="num_components"),
-    #Integer(20, 50, name="epochs"), #FIXED TO 30 due to time constraints
-    Categorical([None, "BM25", "TF-IDF"], name='feature_weighting')
-]
-
-names[P3alphaRecommender] = "P3alphaRecommender_kcross_2" # Discarded in favor of RP3Beta :)
-spaces[P3alphaRecommender] = [
-    Integer(400, 600, name="topK"),
-    Real(0, 1, name='alpha'),
-    Categorical([True,False], name="normalize_similarity"),
-    Categorical([None, "TF-IDF"], name='feature_weighting')
-    #Real(0.1, 200, name='K'),
-    #Real(0.01, 1, name='B'),
-]
-
-
-names[RP3betaRecommender] = "RP3betaRecommender_kcross2" #Done and fixed
-spaces[RP3betaRecommender] = [
-    Integer(600, 1200, name="topK"),
-    Real(0, 1, name='alpha'),
-    Real(0, 1, name='beta'),
-    Categorical([False], name="normalize_similarity"),
-    Categorical(["TF-IDF"], name='feature_weighting')
-]
-
-# names[HybridRecommender] = "HybridRecommender"
-# spaces[HybridRecommender] = [
-#     Categorical([0.0], name="TopPopweight"),
-#     Real(0, 5, name='IBCFweight'),
-#     Real(0, 5, name='UBCFweight'),
-#     Real(0, 5, name='CBFweight'),
-#     Categorical([0.0], name="SSLIMweight"),
-#     Real(0, 5, name='ALSweight'),
-#     Categorical([0.0], name="LFMCFweight"),
-#     Real(0, 5, name='SLIMBPRweight'),
-#     Categorical([0.0], name="SVDweight"),
-#     Real(0, 1, name='P3weight'),
-#     Categorical([True], name="normalize")
-# ]
-
-names[HybridRecommenderWithTopK] = "HybridRecommenderWithTopK_kcross_mid_yes_normalize_small_k"
-spaces[HybridRecommenderWithTopK] = [
-#    Real(0, 1, name='TopPopweight'),
-    Real(0, 5, name='IBCFweight'),
-    Real(0, 5, name='UBCFweight'),
-    Real(0, 5, name='CBFweight'),
-    Real(0, 5, name="SSLIMweight"),
-    Real(0, 5, name='ALSweight'),
-    Categorical([0.0], name="LFMCFweight"),
-    Real(0, 5, name='SLIMBPRweight'),
-    Real(0, 5, name="SVDweight"),
-    Real(0, 5, name='P3weight'),
-    Real(0, 5, name='RP3weight'),
-    Categorical([True], name="normalize")
-]
+from utils.hyperparam_def import names, spaces
+from recommenders.hybrid import *
 
 
 def load_df(name):
@@ -192,7 +48,8 @@ def create_df(param_tuples, param_names, value_list, metric="MAP"):
     return df
 
 
-def optimize_parameters(URMrecommender_class: type, n_calls=100, k=5, validation_percentage=0.05, n_random_starts=None, seed=None, limit_at=1000):
+def optimize_parameters(URMrecommender_class: type, n_calls=100, k=5, validation_percentage=0.05, n_random_starts=None,
+                        seed=None, limit_at=1000, forest=False, xi=0.01):
     if n_random_starts is None:
         n_random_starts = int(0.5 * n_calls)
 
@@ -201,7 +58,8 @@ def optimize_parameters(URMrecommender_class: type, n_calls=100, k=5, validation
 
     if validation_percentage > 0:
         print("Using randomized datasets. k={}, val_percentage={}".format(k, validation_percentage))
-        URM_trains, URM_tests, ICM_trains = utils.dataset.give_me_randomized_k_folds_with_val_percentage(k, validation_percentage)
+        URM_trains, URM_tests, ICM_trains = utils.dataset.give_me_randomized_k_folds_with_val_percentage(k,
+                                                                                                         validation_percentage)
     else:
         print("Splitting original datasets in N_folds:{}".format(k))
         URM_trains, URM_tests, ICM_trains = utils.dataset.give_me_k_folds(k)
@@ -211,8 +69,8 @@ def optimize_parameters(URMrecommender_class: type, n_calls=100, k=5, validation
         URM_tests = URM_tests[:limit_at]
         ICM_trains = ICM_trains[:limit_at]
 
-    assert(len(URM_trains) == len(URM_tests) and len(URM_tests) == len(ICM_trains))
-    print("Starting optimization: N_folds={}".format(len(URM_trains)))
+    assert (len(URM_trains) == len(URM_tests) and len(URM_tests) == len(ICM_trains))
+    print("Starting optimization: N_folds={}, name={}".format(len(URM_trains), names[URMrecommender_class]))
 
     if URMrecommender_class == HybridRecommender or URMrecommender_class == HybridRecommenderWithTopK:
         recommenders = []
@@ -246,9 +104,38 @@ def optimize_parameters(URMrecommender_class: type, n_calls=100, k=5, validation
     param_names = [v.name for v in spaces[URMrecommender_class]]
     xs, ys = read_df(name, param_names)
 
-    res_gp = skopt.gp_minimize(objective, space, n_calls=n_calls, random_state=seed, x0=xs, y0=ys, verbose=True,
-                               noise=1e-10, n_random_starts=n_random_starts
-                               )
+    if not forest:
+        res_gp = skopt.gp_minimize(
+            objective,
+            space,
+            n_calls=n_calls,
+            n_random_starts=n_random_starts,
+            n_points=10000,
+            n_jobs=1,
+            # noise = 'gaussian',
+            noise=1e-5,
+            acq_func='gp_hedge',
+            acq_optimizer='auto',
+            random_state=None,
+            verbose=True,
+            n_restarts_optimizer=10,
+            xi=xi,
+            kappa=1.96,
+            x0=xs,
+            y0=ys,
+        )
+    else:
+        res_gp = skopt.forest_minimize(
+            objective,
+            space,
+            n_calls=n_calls,
+            n_random_starts=n_random_starts,
+            verbose=True,
+            x0=xs,
+            y0=ys,
+            acq_func="EI",
+            xi=xi
+        )
 
     print("Writing a total of {} points for {}. Newly added records: {}".format(len(res_gp.x_iters), name,
                                                                                 n_calls))

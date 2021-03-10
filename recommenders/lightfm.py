@@ -29,7 +29,7 @@ class LightFMRecommender(Recommender):
         self.B = B
 
     def fit(self):
-        self.URM = apply_feature_weighting(self.URM, self.feature_weighting, K=self.K, B=self.B, transpose=True)
+        self.URM = apply_feature_weighting(self.URM, self.feature_weighting, K=self.K, B=self.B)
 
         self._train()
 

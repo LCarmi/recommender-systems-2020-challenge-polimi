@@ -18,13 +18,10 @@ import time, sys
 
 
 class P3alphaRecommender(Recommender):
-    """ P3alpha recommender """
-
-    RECOMMENDER_NAME = "P3alphaRecommender"
 
     def __init__(self, URM: sp.csr_matrix, ICM, exclude_seen=True,
-                 topK=450, alpha=0.60, min_rating=0, implicit=True, normalize_similarity=False,
-                 feature_weighting=None, K=1.2, B=0.75):
+                 topK=590, alpha=0.285, min_rating=0, implicit=True, normalize_similarity=False,
+                 feature_weighting="TF-IDF", K=1.04, B=0.96):
 
         super().__init__(URM, ICM,exclude_seen)
         self.W_sparse = None
@@ -41,7 +38,7 @@ class P3alphaRecommender(Recommender):
 
     def fit(self):
 
-        self.URM = apply_feature_weighting(self.URM, self.feature_weighting, K=self.K, B=self.B, transpose=True)
+        self.URM = apply_feature_weighting(self.URM, self.feature_weighting, K=self.K, B=self.B)
 
         #
         # if X.dtype != np.float32:
@@ -121,7 +118,7 @@ class P3alphaRecommender(Recommender):
 
 
             if time.time() - start_time_printBatch > 60:
-                self._print("Processed {} ( {:.2f}% ) in {:.2f} minutes. Rows per second: {:.0f}".format(
+                print("Processed {} ( {:.2f}% ) in {:.2f} minutes. Rows per second: {:.0f}".format(
                     current_block_start_row,
                     100.0 * float(current_block_start_row) / Pui.shape[1],
                     (time.time() - start_time) / 60,
@@ -149,13 +146,10 @@ class P3alphaRecommender(Recommender):
 
 
 class RP3betaRecommender(Recommender):
-    """ RP3beta recommender """
-
-    RECOMMENDER_NAME = "RP3betaRecommender"
 
     def __init__(self, URM: sp.csr_matrix, ICM, exclude_seen=True,
-                 topK=760, alpha=0.47, beta=0.15, min_rating=0, implicit=True, normalize_similarity=False,
-                 feature_weighting="TF-IDF", K=1.2, B=0.75):
+                 topK=950, alpha=0.298, beta=0.288, min_rating=0, implicit=True, normalize_similarity=False,
+                 feature_weighting=None, K=1.2, B=0.75):
 
         super().__init__(URM, ICM, exclude_seen)
         self.W_sparse = None
@@ -171,6 +165,8 @@ class RP3betaRecommender(Recommender):
         self.B = B
 
     def fit(self):
+
+        self.URM = apply_feature_weighting(self.URM, self.feature_weighting, K=self.K, B=self.B)
 
         # if X.dtype != np.float32:
         #     print("RP3beta fit: For memory usage reasons, we suggest to use np.float32 as dtype for the dataset")
@@ -257,7 +253,7 @@ class RP3betaRecommender(Recommender):
                     numCells += 1
 
             if time.time() - start_time_printBatch > 60:
-                self.print("Processed {} ( {:.2f}% ) in {:.2f} minutes. Rows per second: {:.0f}".format(
+                print("Processed {} ( {:.2f}% ) in {:.2f} minutes. Rows per second: {:.0f}".format(
                     current_block_start_row,
                     100.0 * float(current_block_start_row) / Pui.shape[1],
                     (time.time() - start_time) / 60,
@@ -281,3 +277,26 @@ class RP3betaRecommender(Recommender):
 
         # Precompute URM
         self.predicted_URM = self.URM.dot(self.W_sparse)
+
+        print("RP3BetaRecommender training computed in {:.2f} seconds".format(time.time() - start_time_printBatch))
+
+
+class P3alphaRecommenderSI(P3alphaRecommender):
+    def __init__(self, URM: sp.csr_matrix, ICM, exclude_seen=True, topK=570, alpha=0.30, min_rating=0, implicit=True,
+                 normalize_similarity=False, feature_weighting="BM25", K=1.04, B=0.96, omega=1):
+
+        super().__init__(URM, ICM, exclude_seen, topK, alpha, min_rating, implicit, normalize_similarity,
+                         feature_weighting, K, B)
+
+        self.add_side_information(omega)
+
+
+class RP3betaRecommenderSI(RP3betaRecommender):
+
+    def __init__(self, URM: sp.csr_matrix, ICM, exclude_seen=True, topK=425, alpha=0.366, beta=0.683, min_rating=0,
+                 implicit=True, normalize_similarity=False, feature_weighting=None, K=1.2, B=0.75, omega=39.15):
+
+        super().__init__(URM, ICM, exclude_seen, topK, alpha, beta, min_rating, implicit, normalize_similarity,
+                         feature_weighting, K, B)
+        self.add_side_information(omega)
+

@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.sparse as sp
+from utils.official.Recommender_utils import check_matrix
 
 
 class Recommender:
@@ -7,8 +8,8 @@ class Recommender:
     def __init__(self, URM: sp.csr_matrix, ICM, exclude_seen=True):
         if not sp.isspmatrix_csr(URM):
             raise TypeError(f"We expected a CSR matrix, we got {type(URM)}")
-        self.URM = URM
-        self.ICM = ICM
+        self.URM = URM.copy()
+        self.ICM = ICM.copy()
         self.predicted_URM = None
         self.exclude_seen = exclude_seen
         self.recommendations = None
@@ -75,6 +76,24 @@ class Recommender:
         mask = np.argpartition(predicted_ratings, -k)[-k:]
 
         return predicted_ratings[mask], mask
+
+    def add_side_information(self, beta):
+
+        self.URM = self.URM.copy()
+        self._stack(self.ICM.T, beta)
+
+    def _stack(self, to_stack, param, format='csr'):
+
+        """
+        Stacks a new sparse matrix under the A matrix used for training
+        :param to_stack: sparse matrix to add
+        :param param: regularization
+        :param format: default 'csr'
+        """
+
+        tmp = check_matrix(to_stack, 'csr', dtype=np.float32)
+        tmp = tmp.multiply(param)
+        self.URM = sp.vstack((self.URM, tmp), format=format, dtype=np.float32)
 
 
 class MatrixFactorizationRecommender(Recommender):
